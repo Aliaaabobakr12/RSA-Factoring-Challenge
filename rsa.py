@@ -1,60 +1,61 @@
 #!/usr/bin/python3
 
-import sys
-import random
 import time
+import math
+import sys
 
-def is_prime(num, k=20):
-    if num == 2 or num == 3:
-        return True
-    if num < 2 or num % 2 == 0:
+def pollard_rho(n):
+    if n % 2 == 0:
+        return 2
+    
+    x = 2
+    y = 2
+    d = 1
+    
+    f = lambda x: (x**2 + 1) % n
+    
+    while d == 1:
+        x = f(x)
+        y = f(f(y))
+        d = math.gcd(abs(x - y), n)
+    
+    return d
+
+def is_prime(num):
+    if num < 2:
         return False
-
-
-    d = num - 1
-    r = 0
-    while d % 2 == 0:
-        d //= 2
-        r += 1
-
-    for _ in range(k):
-        a = random.randint(2, num - 2)
-        x = pow(a, d, num)
-        if x == 1 or x == num - 1:
-            continue
-        for _ in range(r - 1):
-            x = pow(x, 2, num)
-            if x == num - 1:
-                break
-        else:
+    for i in range(2, int(math.sqrt(num)) + 1):
+        if num % i == 0:
             return False
-
     return True
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) != 2:
-        print("Usage: rsa <file>")
-        exit()
+        print("Usage: python factorize.py <file>")
+        return
 
-    input_file = sys.argv[1]
-
-    try:
-        with open(input_file, 'r') as f:
-            lines = f.readlines()
-    except FileNotFoundError:
-        print("File not found")
-        exit()
+    file_path = sys.argv[1]
 
     start_time = time.time()
-
-    num = int(lines[0].strip())
-
-    for i in range(2, num//2):
-        if num % i == 0 and is_prime(i) and is_prime(num//i):
-            print("{}={}*{}".format(num, i, num//i))
-            break
-
+    try:
+        with open(file_path, 'r') as file:
+            number = int(file.readline().strip())
+        p = pollard_rho(number)
+        while not is_prime(p):
+            p = pollard_rho(p)
+        q = number // p
+        if p == number or q == number:
+            print("{} is prime.".format(number))
+        else:
+            print("{}={}*{}".format(number, p, q))
 
         if time.time() - start_time > 5:
             print("Time limit exceeded")
             exit()
+    
+    except FileNotFoundError:
+        print("File '{}' not found.".format(file_path))
+
+
+if __name__ == '__main__':
+    main()

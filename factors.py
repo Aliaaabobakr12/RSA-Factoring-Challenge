@@ -1,62 +1,61 @@
 #!/usr/bin/python3
 
-
 import sys
-import time
+import math
+import random
 
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
 
-def factorize(num):
-    '''Takes a number as input.
-    Args:
-        num: input integer.
-        Return: A tuple of two factors if the number is not a prime.
-                None if the number is prime.
-    '''
-    for i in range(2, int(num**0.5)+1):
-        if num % i == 0:
-            return (i, num//i)
-    return None
+def pollard_rho(n):
+    if n <= 1:
+        return [(n, 1)]
 
+    factors = []
+    while n % 2 == 0:
+        factors.append((2, n // 2))
+        n //= 2
 
-if __name__ == "__main__":
+    if n == 1:
+        return factors
 
+    def rho(x, c):
+        return (x * x + c) % n
 
-    '''Reads the input file.
-    '''
-    if len(sys.argv) != 2:
-        print("Usage: factors <file>")
-        exit()
+    x, y, d = 2, 2, 1
+    c = random.randint(1, n - 1)
+    while d == 1:
+        x = rho(x, c)
+        y = rho(rho(y, c), c)
+        d = gcd(abs(x - y), n)
 
+    if d != n:
+        factors.extend(pollard_rho(d))
+        factors.extend(pollard_rho(n // d))
+    else:
+        factors.append((n, 1))
 
-    input_file = sys.argv[1]
+    return factors
 
+if len(sys.argv) != 2:
+    print("Usage: factors <file>")
+    sys.exit(1)
 
-    try:
-        with open(input_file, 'r') as f:
-            lines = f.readlines()
-    except FileNotFoundError:
-        print("File not found")
-        exit()
+input_file = sys.argv[1]
 
+try:
+    with open(input_file, 'r') as file:
+        for line in file:
+            n = int(line.strip())
+            factors = pollard_rho(n)
+            for p, q in factors:
+                print("{}={}*{}".format(n, p, q))
 
-    start_time = time.time()
-
-
-    '''loops over each line (which should contain one natural number per line),
-        and calls factorize on each number.
-        If factorize returns a tuple of factors,
-        it prints the factorization in the desired forma
-    '''
-    for line in lines:
-        num = int(line.strip())
-        factors = factorize(num)
-        if factors:
-            print("{}={}*{}".format(num, factors[0], factors[1]))
-
-
-        '''If the elapsed time exceeds 5 seconds,
-            the program exits with an error message.
-        '''
-        if time.time() - start_time > 5:
-            print("Time limit exceeded")
-            exit()
+except FileNotFoundError:
+    print("File '{}' not found.".format(input_file))
+    sys.exit(1)
+except ValueError:
+    print("Invalid input in the file. Please ensure all lines contain valid natural numbers greater than 1.")
+    sys.exit(1)
